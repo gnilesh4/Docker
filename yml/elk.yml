@@ -1,0 +1,58 @@
+version: "3.7"
+
+services:
+    elk-elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.8.0
+        container_name: elk-elasticsearch
+        environment:
+            ELASTIC_PASSWORD: P4ssW0rd!
+            ELASTIC_USERNAME: admin
+            ES_JAVA_OPTS: -Xms512m -Xmx512m
+            discovery.type: single-node
+        networks:
+            - network
+        ports:
+            - 9200:9200
+            - 9300:9300
+        volumes:
+            - elk:/usr/share/elasticsearch/data
+    elk-kibana:
+        image: docker.elastic.co/kibana/kibana:7.8.0
+        container_name: elk-kibana
+        depends_on:
+            - elk-elasticsearch
+        environment:
+            ELASTICSEARCH_HOSTS: http://elk-elasticsearch:9200
+            ELASTICSEARCH_URL: http://elk-elasticsearch:9200
+            LS_JAVA_OPTS: -Xms512m -Xmx512m
+            elasticsearch.password: P4ssW0rd!
+            elasticsearch.username: admin
+        networks:
+            - network
+        ports:
+            - 5601:5601
+    elk-apm:
+        image: docker.elastic.co/apm/apm-server:7.8.0
+        container_name: elk-apm
+        depends_on:
+            - elk-elasticsearch
+            - elk-kibana
+        cap_add: ["CHOWN", "DAC_OVERRIDE", "SETGID", "SETUID"]
+        cap_drop: ["ALL"]
+        networks:
+            - network
+        ports:
+            - 8200:8200
+        command: >
+            apm-server -e
+            -E apm-server.rum.enabled=true
+            -E setup.kibana.host=elk-kibana:5601
+            -E setup.template.settings.index.number_of_replicas=0
+            -E apm-server.kibana.enabled=true
+            -E apm-server.kibana.host=elk-kibana:5601
+            -E output.elasticsearch.hosts=["elk-elasticsearch:9200"]
+networks:
+    network:
+volumes:
+    elk:
+        driver: local

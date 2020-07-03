@@ -1,0 +1,32 @@
+version: "3.7"
+
+services:
+    influxdb:
+        image: influxdb
+        container_name: influxdb
+        environment:
+            INFLUXDB_ADMIN_PASSWORD: P4ssW0rd!
+            INFLUXDB_ADMIN_USER: admin
+        networks:
+            - network
+        ports:
+            - 8086:8086
+        volumes:
+            - influxdb:/var/lib/influxdb
+    chronograf:
+        image: chronograf
+        container_name: chronograf
+        command: chronograf --influxdb-url=http://influxdb:8086
+        networks:
+            - network
+        ports:
+            - 8888:8888
+        volumes:
+            - influxdb-chronograf:/var/lib/chronograf
+networks:
+    network:
+volumes:
+    influxdb:
+        driver: local
+    influxdb-chronograf:
+        driver: local
